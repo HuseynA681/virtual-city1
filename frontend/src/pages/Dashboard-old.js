@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, ShoppingBag, Home, Users, LogOut, Package, Gamepad2, Shield, Menu, X } from 'lucide-react';
+import { MessageSquare, ShoppingBag, Home, Users, LogOut, Package, Gamepad2, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ChatComponent } from '../components/Chat';
@@ -13,29 +13,12 @@ import { AdminPanelComponent } from '../components/AdminPanel';
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/');
-  };
-
-  const getRoleName = (roleLevel) => {
-    const roleNames = {
-      10: 'Me (Owner)',
-      9: 'Polkovnik',
-      8: 'Padpolkovnik',
-      7: 'Mayor',
-      6: 'Kapitan',
-      5: 'Baş Leytenant',
-      4: 'Kicik Leytenant',
-      3: 'Gizir',
-      2: 'Serjant',
-      1: 'Kiçik serjant'
-    };
-    return roleNames[roleLevel] || 'User';
   };
 
   const tabs = [
@@ -46,48 +29,28 @@ export const Dashboard = () => {
     { id: 'apartment', label: 'Apartment', icon: Home },
     { id: 'games', label: 'Games', icon: Gamepad2 },
     { id: 'clans', label: 'Clans', icon: Users },
-    ...(user?.roleLevel >= 7 ? [{ id: 'admin', label: 'Admin', icon: Shield }] : [])
+    ...(['owner', 'co-owner', 'elder'].includes(user?.role) ? [{ id: 'admin', label: 'Admin', icon: Shield }] : [])
   ];
-
-  const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={closeSidebar}
-        />
-      )}
-
       {/* Sidebar */}
-      <div
-        className={`fixed left-0 top-0 h-screen w-64 bg-white/10 backdrop-blur-md border-r border-white/20 p-6 overflow-y-auto z-40 transform transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
-      >
-        <div className="flex items-center justify-between mb-8 lg:justify-start">
+      <div className="fixed left-0 top-0 h-screen w-64 bg-white/10 backdrop-blur-md border-r border-white/20 p-6 overflow-y-auto">
+        <div className="mb-8">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
             🏙️ Virtual City
           </h1>
-          <button
-            onClick={closeSidebar}
-            className="lg:hidden text-white hover:text-purple-400"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
 
         {/* User Card */}
         <div className="mb-8 p-4 rounded-lg bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30">
           <img src={user?.avatar} alt={user?.username} className="w-16 h-16 rounded-lg mb-4 object-cover" />
-          <h2 className="font-semibold text-lg truncate">{user?.username}</h2>
+          <h2 className="font-semibold text-lg">{user?.username}</h2>
           <p className="text-purple-300 text-sm">Level {user?.level}</p>
           <p className="text-yellow-400 font-semibold mt-2">💰 {user?.coins} coins</p>
-          {user?.roleLevel >= 10 && <p className="text-red-400 text-xs font-bold mt-1">👑 {getRoleName(user?.roleLevel)}</p>}
-          {user?.roleLevel >= 7 && user?.roleLevel < 10 && <p className="text-yellow-400 text-xs font-bold mt-1">⭐ {getRoleName(user?.roleLevel)}</p>}
-          {user?.roleLevel >= 5 && user?.roleLevel < 7 && <p className="text-blue-400 text-xs font-bold mt-1">🧙 {getRoleName(user?.roleLevel)}</p>}
+          {user?.role === 'owner' && <p className="text-red-400 text-xs font-bold mt-1">👑 OWNER</p>}
+          {user?.role === 'co-owner' && <p className="text-yellow-400 text-xs font-bold mt-1">⭐ CO-OWNER</p>}
+          {user?.role === 'elder' && <p className="text-blue-400 text-xs font-bold mt-1">🧙 ELDER</p>}
         </div>
 
         {/* Navigation */}
@@ -95,10 +58,7 @@ export const Dashboard = () => {
           {tabs.map(tab => (
             <motion.button
               key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                closeSidebar();
-              }}
+              onClick={() => setActiveTab(tab.id)}
               whileHover={{ x: 4 }}
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
                 activeTab === tab.id
@@ -106,8 +66,8 @@ export const Dashboard = () => {
                   : 'text-gray-300 hover:bg-white/10'
               }`}
             >
-              <tab.icon className="w-5 h-5 flex-shrink-0" />
-              <span className="truncate">{tab.label}</span>
+              <tab.icon className="w-5 h-5" />
+              <span>{tab.label}</span>
             </motion.button>
           ))}
         </nav>
@@ -123,22 +83,7 @@ export const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-64 pt-16 lg:pt-0 px-4 lg:p-8 pb-8">
-        {/* Mobile Header */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-20 bg-white/10 backdrop-blur-md border-b border-white/20 p-4 flex items-center justify-between">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-white hover:text-purple-400"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-            Virtual City
-          </h1>
-          <div className="w-6" /> {/* Spacer for centering */}
-        </div>
-
-        {/* Tab Content */}
+      <div className="ml-64 p-8">
         {activeTab === 'home' && <HomeTab user={user} />}
         {activeTab === 'chat' && <ChatComponent />}
         {activeTab === 'marketplace' && <MarketplaceComponent />}
@@ -146,7 +91,7 @@ export const Dashboard = () => {
         {activeTab === 'apartment' && <ApartmentComponent />}
         {activeTab === 'games' && <GameAreaComponent />}
         {activeTab === 'clans' && <ClansComponent />}
-        {activeTab === 'admin' && user?.roleLevel >= 7 && <AdminPanelComponent />}
+        {activeTab === 'admin' && user?.isAdmin && <AdminPanelComponent />}
       </div>
     </div>
   );
@@ -154,11 +99,11 @@ export const Dashboard = () => {
 
 const HomeTab = ({ user }) => {
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
+    <div className="space-y-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6"
+        className="grid grid-cols-1 md:grid-cols-4 gap-6"
       >
         {/* Stats Cards */}
         <StatCard icon="⭐" label="Level" value={user?.level} />
@@ -171,9 +116,9 @@ const HomeTab = ({ user }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="p-6 md:p-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20"
+        className="p-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20"
       >
-        <h2 className="text-xl md:text-2xl font-bold mb-6">Quick Actions</h2>
+        <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <ActionButton icon="💼" label="Work Job" desc="Earn 100 coins" />
           <ActionButton icon="🎮" label="Play Game" desc="Earn items" />
@@ -185,9 +130,9 @@ const HomeTab = ({ user }) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="p-6 md:p-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20"
+        className="p-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20"
       >
-        <h2 className="text-xl md:text-2xl font-bold mb-6">📰 Recent Activity</h2>
+        <h2 className="text-2xl font-bold mb-6">📰 Recent Activity</h2>
         <div className="space-y-3">
           <ActivityItem icon="✨" text="Joined Virtual City" time="5 mins ago" />
           <ActivityItem icon="💰" text="Earned 100 coins" time="10 mins ago" />
@@ -201,31 +146,35 @@ const HomeTab = ({ user }) => {
 const StatCard = ({ icon, label, value }) => (
   <motion.div
     whileHover={{ y: -4 }}
-    className="p-4 md:p-6 rounded-lg bg-gradient-to-br from-purple-600/30 to-pink-600/30 border border-purple-500/50 backdrop-blur-sm"
+    className="p-6 rounded-lg bg-gradient-to-br from-purple-600/30 to-pink-600/30 border border-purple-500/50 backdrop-blur-sm"
   >
-    <p className="text-3xl md:text-4xl mb-2">{icon}</p>
-    <p className="text-gray-300 text-sm">{label}</p>
-    <p className="text-xl md:text-2xl font-bold text-white">{value}</p>
+    <div className="text-3xl mb-2">{icon}</div>
+    <p className="text-gray-400">{label}</p>
+    <p className="text-2xl font-bold">{value}</p>
   </motion.div>
 );
 
 const ActionButton = ({ icon, label, desc }) => (
   <motion.button
-    whileHover={{ scale: 1.02 }}
-    className="p-4 rounded-lg bg-gradient-to-r from-purple-600/30 to-pink-600/30 border border-purple-500/50 hover:border-purple-400 transition text-left"
+    whileHover={{ scale: 1.05 }}
+    className="p-4 rounded-lg bg-white/10 border border-white/20 hover:border-purple-500/50 transition text-left"
   >
-    <p className="text-2xl mb-2">{icon}</p>
+    <div className="text-3xl mb-2">{icon}</div>
     <p className="font-semibold">{label}</p>
-    <p className="text-sm text-gray-300">{desc}</p>
+    <p className="text-sm text-gray-400">{desc}</p>
   </motion.button>
 );
 
 const ActivityItem = ({ icon, text, time }) => (
-  <div className="flex items-center space-x-4 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition">
-    <span className="text-2xl">{icon}</span>
-    <div className="flex-1">
-      <p className="font-semibold">{text}</p>
-      <p className="text-sm text-gray-400">{time}</p>
+  <motion.div
+    initial={{ opacity: 0, x: -10 }}
+    animate={{ opacity: 1, x: 0 }}
+    className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition"
+  >
+    <div className="flex items-center gap-3">
+      <span className="text-2xl">{icon}</span>
+      <span>{text}</span>
     </div>
-  </div>
+    <span className="text-xs text-gray-500">{time}</span>
+  </motion.div>
 );
